@@ -6,6 +6,11 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
 import CustomFormField from "../CustomFormField"
+import SubmitButton from "../SubmitButton"
+import { useState } from "react"
+import { UserFormValidation } from "@/lib/validation"
+import { useRouter } from "next/navigation"
+import { createUser } from "@/lib/actions/patient.actions"
 
 
 export enum FormFieldType {
@@ -18,23 +23,31 @@ export enum FormFieldType {
   SKELETON = "skeleton",
 }
  
-const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-})
- 
+
 const PatientForm =() => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const router = useRouter();
+  const [isLoading, setisLoading] = useState(false)
+  const form = useForm<z.infer<typeof UserFormValidation>>({
+    resolver: zodResolver(UserFormValidation),
     defaultValues: {
-      username: "",
+      name: "",
+      email: "",
+      phone: "",
     },
   })
  
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit({name, email, phone}: z.infer<typeof UserFormValidation>) {
+    setisLoading(true);
 
-    console.log(values)
+    try {
+      const userData = {name, email, phone};
+
+      const user = await createUser(userData);
+
+      if(user) router.push(`/patients/${user.$id}/register`)
+    } catch (error) {
+      console.log(error)
+    }
   }
   
   return (
@@ -73,7 +86,7 @@ const PatientForm =() => {
           placeholder="(555) 123-4567"
         />
         
-        <Button type="submit">Submit</Button>
+        <SubmitButton isLoading={isLoading}>Get Started</SubmitButton> 
       </form>
     </Form>
   )
